@@ -14,7 +14,8 @@ def home():
             "/scrape": "Scrape latest data from Zomato",
             "/data": "Get the last scraped data",
             "/status": "Get API status"
-        }
+        },
+        "note": "If scraping fails, Chrome might not be properly installed on the server."
     })
 
 @app.route('/scrape')
@@ -27,7 +28,7 @@ def scrape():
             return jsonify({
                 "success": False,
                 "error": restaurants["error"],
-                "message": "Scraping failed. This could be due to Zomato's website structure changes or anti-bot measures."
+                "message": "Scraping failed. This could be due to Chrome not being installed on the server or Zomato's website structure changes."
             }), 500
         
         # Save to JSON
@@ -50,7 +51,7 @@ def scrape():
         return jsonify({
             "success": False,
             "error": str(e),
-            "message": "An unexpected error occurred during scraping."
+            "message": "An unexpected error occurred during scraping. Chrome might not be installed on the server."
         }), 500
 
 @app.route('/data')
@@ -76,7 +77,8 @@ def get_data():
 def status():
     return jsonify({
         "status": "active",
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
+        "chrome_installed": os.path.exists('/usr/bin/google-chrome-stable')
     })
 
 if __name__ == '__main__':
