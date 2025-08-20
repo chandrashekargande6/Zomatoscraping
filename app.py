@@ -26,7 +26,8 @@ def scrape():
         if isinstance(restaurants, dict) and "error" in restaurants:
             return jsonify({
                 "success": False,
-                "error": restaurants["error"]
+                "error": restaurants["error"],
+                "message": "Scraping failed. This could be due to Zomato's website structure changes or anti-bot measures."
             }), 500
         
         # Save to JSON
@@ -48,7 +49,8 @@ def scrape():
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e)
+            "error": str(e),
+            "message": "An unexpected error occurred during scraping."
         }), 500
 
 @app.route('/data')
@@ -65,7 +67,10 @@ def get_data():
                 "restaurants": []
             })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "error": str(e),
+            "message": "Error reading stored data."
+        }), 500
 
 @app.route('/status')
 def status():
