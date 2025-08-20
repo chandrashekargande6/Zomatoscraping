@@ -39,7 +39,7 @@ def scrape_zomato():
         scroll_pause = 2
         screen_height = driver.execute_script("return window.innerHeight")
         scrolls = 0
-        max_scrolls = 10
+        max_scrolls = 5  # Reduced to make it faster
         
         while scrolls < max_scrolls:
             # Scroll down
@@ -57,11 +57,11 @@ def scrape_zomato():
 
         # ✅ Try multiple selectors to find restaurant names
         restaurant_selectors = [
-            "a.sc-1kx5g6g-0",  # New Zomato selector
-            "h4.sc-1hp8d8a-0",  # Another common Zomato selector
-            "[class*='restaurant-name']",  # Class contains restaurant-name
-            "a[href*='/hyderabad/'] h4",  # Anchor with location and h4
-            ".sc-1hp8d8a-0",  # Another potential class
+            "a[href*='/r/']",  # Restaurant links
+            "h4",  # Heading elements
+            "[data-testid*='restaurant']",  # Test IDs
+            ".sc-1hp8d8a-0",  # Common Zomato class
+            "a.sc-1kx5g6g-0",  # Another common Zomato class
         ]
         
         restaurants = []
@@ -72,10 +72,18 @@ def scrape_zomato():
                 if elements:
                     print(f"Found {len(elements)} elements with selector: {selector}")
                     for element in elements:
-                        name = element.text.strip()
-                        if name and len(name) > 2:  # Filter out very short text
-                            restaurants.append({"name": name})
-                    break  # Stop if we found elements with this selector
+                        try:
+                            name = element.text.strip()
+                            # Safely check if name exists and has valid content
+                            if name and len(name) > 2 and name not in ["", " "]:  
+                                restaurants.append({"name": name})
+                        except Exception as e:
+                            print(f"Error processing element text: {str(e)}")
+                            continue
+                    
+                    # If we found a reasonable number of restaurants, break
+                    if len(restaurants) >= 10:
+                        break
             except Exception as e:
                 print(f"Error with selector {selector}: {str(e)}")
                 continue
@@ -86,21 +94,29 @@ def scrape_zomato():
             # Look for all text elements that might be restaurant names
             all_elements = driver.find_elements(By.CSS_SELECTOR, "h1, h2, h3, h4, h5, h6, a, div, span")
             for element in all_elements:
-                text = element.text.strip()
-                # Heuristic: restaurant names are usually 2-10 words
-                if text and 2 <= len(text.split()) <= 10 and len(text) > 3:
-                    # Exclude common non-restaurant text
-                    excluded_terms = ["home", "login", "sign up", "search", "filter", "sort", "zomato", "download app"]
-                    if not any(term in text.lower() for term in excluded_terms):
-                        restaurants.append({"name": text})
+                try:
+                    text = element.text.strip() if element.text else ""
+                    # Heuristic: restaurant names are usually 2-10 words
+                    if text and 2 <= len(text.split()) <= 10 and len(text) > 3:
+                        # Exclude common non-restaurant text
+                        excluded_terms = ["home", "login", "sign up", "search", "filter", "sort", "zomato", "download app", "menu", "order", "cart"]
+                        if not any(term in text.lower() for term in excluded_terms):
+                            restaurants.append({"name": text})
+                except Exception as e:
+                    print(f"Error processing general element: {str(e)}")
+                    continue
         
         # Remove duplicates while preserving order
         seen = set()
         unique_restaurants = []
         for r in restaurants:
-            if r['name'] not in seen:
-                seen.add(r['name'])
-                unique_restaurants.append(r)
+            try:
+                if r['name'] not in seen:
+                    seen.add(r['name'])
+                    unique_restaurants.append(r)
+            except Exception as e:
+                print(f"Error deduplicating: {str(e)}")
+                continue
         
         return unique_restaurants
 
@@ -110,7 +126,10 @@ def scrape_zomato():
     
     finally:
         # ✅ Quit browser
-        driver.quit()
+        try:
+            driver.quit()
+        except:
+            pass
 
 if __name__ == "__main__":
     # Run when executed directly
@@ -121,4 +140,5 @@ if __name__ == "__main__":
         json.dump(restaurants, f, ensure_ascii=False, indent=2)
     
     print(f"✅ Scraped {len(restaurants)} restaurants")
-    print(json.dumps(restaurants[:20], indent=2, ensure_ascii=False))  # preview first 20
+    if restaurants:
+        print(json.dumps(restaurants[:20], indent=2, ensure_ascii=False))  # preview first 20
