@@ -1,0 +1,4 @@
+selenium==4.15.0
+flask==2.3.3
+webdriver-manager==4.0.1
+gunicorn==21.2.0
