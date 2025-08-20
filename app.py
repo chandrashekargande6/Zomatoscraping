@@ -1,5 +1,5 @@
 from flask import Flask, jsonify
-from scraper import scrape_zomato
+from beautiful_scraper import scrape_zomato_beautiful
 import json
 import os
 from datetime import datetime
@@ -15,23 +15,21 @@ def home():
             "/data": "Get the last scraped data",
             "/status": "Get API status"
         },
-        "note": "If scraping fails, Chrome might not be properly installed on the server."
+        "note": "Using BeautifulSoup method (no Chrome required)"
     })
 
 @app.route('/scrape')
 def scrape():
     try:
-        restaurants = scrape_zomato()
+        restaurants = scrape_zomato_beautiful()
         
-        # Check if we got an error response
         if isinstance(restaurants, dict) and "error" in restaurants:
             return jsonify({
                 "success": False,
                 "error": restaurants["error"],
-                "message": "Scraping failed. This could be due to Chrome not being installed on the server or Zomato's website structure changes."
+                "message": "Scraping failed. Zomato's website structure may have changed."
             }), 500
         
-        # Save to JSON
         with open("restaurants.json", "w", encoding="utf-8") as f:
             json.dump({
                 "last_updated": datetime.now().isoformat(),
@@ -51,7 +49,7 @@ def scrape():
         return jsonify({
             "success": False,
             "error": str(e),
-            "message": "An unexpected error occurred during scraping. Chrome might not be installed on the server."
+            "message": "An unexpected error occurred during scraping."
         }), 500
 
 @app.route('/data')
@@ -78,7 +76,7 @@ def status():
     return jsonify({
         "status": "active",
         "timestamp": datetime.now().isoformat(),
-        "chrome_installed": os.path.exists('/usr/bin/google-chrome-stable')
+        "method": "BeautifulSoup"
     })
 
 if __name__ == '__main__':
